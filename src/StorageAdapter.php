@@ -2,23 +2,25 @@
 
 namespace Litp\Flysystem;
 
-use sinacloud\sae\Storage as Client;
+use sinacloud\sae\Storage;
 
 use League\Flysystem\Adapter\AbstractAdapter;
 use League\Flysystem\Config;
 use League\Flysystem\Util;
 
-class SAEStorageAdapter extends AbstractAdapter 
+class StorageAdapter extends AbstractAdapter 
 {
 
     protected $storage;
     protected $bucket;
 
-    public function __construct(Client $client, $bucket)
+    public function __construct(Storage $client, $bucket)
     {
         $this->$storage = $client;
         $this->$bucket = $bucket;
     }
+
+    
     /**
      * Check whether a file exists.
      *
@@ -42,8 +44,8 @@ class SAEStorageAdapter extends AbstractAdapter
     public function read($path)
     {
         $response = $this->$storage->getObject($this->$bucket,$path);
-        if ($response == 200){
-            $content['contents'] = $response->body;
+        if ($response['error'] != true){
+            $content['contents'] = $response['body'];
             return $contents;
         } else {
             return false;
@@ -61,8 +63,8 @@ class SAEStorageAdapter extends AbstractAdapter
     public function readStream($path)
     {
         $response = $this->$storage->getObject($this->$bucket,$path);
-        if ($response == 200){
-            $content['stream'] = $response->body;
+        if ($response != true){
+            $content['stream'] = $response['body'];
             return $contents;
         } else {
             return false;
@@ -80,10 +82,32 @@ class SAEStorageAdapter extends AbstractAdapter
      */
     public function listContents($directory = '', $recursive = false)
     {
+        $results = [];
+
+        if($directory!=''){
+            if(substr($directory, -1)!='/'){
+                $directory = $directory . '/';
+            }
+        }
+
         if ($recursive == false){
-            return $this->$storage->getBucket($this->$bucket, $path, null, 10000, '/');
+            $dirs = $this->$storage->getBucket($this->$bucket, $path, null, 10000, '/');            
+            foreach($dirs as $dir){
+                if(!array_key_exists('subdir',$dir)){
+                    array_merge($results,$dir['name']);
+                }
+            }
+            return $results;
         } else {
-            return $this->$storage->getBucket($this->$bucket, $path, null, 10000);
+            $dirs = $this->$storage->getBucket($this->$bucket,$path, null, 10000,'/');
+            foreach($dirs as $dir){
+                if(!array_key_exists('subdir', $dir)){
+                    array_merge($results,$dir['name']);
+                }else {
+                    array_merge($results,$this->listContents($dir['name'],true));
+                }
+            }
+            return $results;
         }
     }
 
@@ -97,7 +121,7 @@ class SAEStorageAdapter extends AbstractAdapter
      */
     public function getMetadata($path)
     {
-
+        return $this->getObjectInfo($this->$bucket,$path,true);
     }
 
 
@@ -110,7 +134,8 @@ class SAEStorageAdapter extends AbstractAdapter
      */
     public function getSize($path)
     {
-        //
+        $result = $this->getObjectInfo($this->$bucket,$path,true);
+        return $result['size'];
     }
 
 
@@ -122,7 +147,14 @@ class SAEStorageAdapter extends AbstractAdapter
      *
      * @return array|false
      */
-    public function getMimetype($path);
+    public function getMimetype($path)
+    {
+        $result = $this->getObjectInfo($this->$bucket,$path,true);
+        return $result['type'];
+    }
+
+
+
     /**
      * Get the timestamp of a file.
      *
@@ -130,7 +162,14 @@ class SAEStorageAdapter extends AbstractAdapter
      *
      * @return array|false
      */
-    public function getTimestamp($path);
+    public function getTimestamp($path)
+    {
+        $result = $this->getObjectInfo($this->$bucket,$path,true);
+        return $result['date'];
+    }
+
+
+
     /**
      * Get the visibility of a file.
      *
@@ -138,7 +177,10 @@ class SAEStorageAdapter extends AbstractAdapter
      *
      * @return array|false
      */
-    public function getVisibility($path);
+    public function getVisibility($path)
+    {
+        return true;
+    }
 
 
     /////////////////////////////////////////////////////
@@ -163,7 +205,11 @@ class SAEStorageAdapter extends AbstractAdapter
      */
     public function write($path, $contents, Config $config)
     {
-        return (bool) $this->$storage->putObject($contents, $this->$bucket, $path);
+        if((bool) $this->$storage->putObject($contents, $this->$bucket, $path)){
+            return $this-$getMetadata($path);
+        } else {
+            return false;
+        }
     }
 
 
@@ -178,8 +224,13 @@ class SAEStorageAdapter extends AbstractAdapter
      */
     public function writeStream($path, $resource, Config $config)
     {
-        return (bool) $this->$storage->putObject($resource, $this->$bucket, $path);
+        if((bool) $this->$storage->putObject($contents, $this->$bucket, $path)){
+            return $this-$getMetadata($path);
+        } else {
+            return false;
+        }
     }
+
 
 
     /**
@@ -199,6 +250,7 @@ class SAEStorageAdapter extends AbstractAdapter
             return $this->write($path, $contents, $config);
         }
     }
+
 
 
     /**
@@ -314,7 +366,7 @@ class SAEStorageAdapter extends AbstractAdapter
      */
     public function setVisibility($path, $visibility)
     {
-
+        return true;
     }
 
    }

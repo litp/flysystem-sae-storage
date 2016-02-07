@@ -2,6 +2,8 @@
 
 namespace Litp\Flysystem;
 
+require_once __DIR__ . '/vendor/autoload.php';
+
 use sinacloud\sae\Storage;
 
 use League\Flysystem\Adapter\AbstractAdapter;
@@ -16,8 +18,8 @@ class StorageAdapter extends AbstractAdapter
 
     public function __construct(Storage $client, $bucket)
     {
-        $this->$storage = $client;
-        $this->$bucket = $bucket;
+        $this->storage = $client;
+        $this->bucket = $bucket;
     }
 
     
@@ -30,7 +32,7 @@ class StorageAdapter extends AbstractAdapter
      */
     public function has($path)
     {
-        return $this->$storage->getObjectInfo($this->$bucket,$path,false);
+        return $this->storage->getObjectInfo($this->bucket,$path,false);
     }
 
 
@@ -43,10 +45,10 @@ class StorageAdapter extends AbstractAdapter
      */
     public function read($path)
     {
-        $response = $this->$storage->getObject($this->$bucket,$path);
-        if ($response['error'] != true){
-            $content['contents'] = $response['body'];
-            return $contents;
+        $response = $this->storage->getObject($this->bucket,$path);
+        if ($response->error != true){
+            $content['contents'] = $response->body;
+            return $content;
         } else {
             return false;
         }
@@ -62,9 +64,9 @@ class StorageAdapter extends AbstractAdapter
      */
     public function readStream($path)
     {
-        $response = $this->$storage->getObject($this->$bucket,$path);
-        if ($response != true){
-            $content['stream'] = $response['body'];
+        $response = $this->storage->getObject($this->bucket,$path);
+        if ($response->error != true){
+            $content['stream'] = $response->body;
             return $contents;
         } else {
             return false;
@@ -91,20 +93,20 @@ class StorageAdapter extends AbstractAdapter
         }
 
         if ($recursive == false){
-            $dirs = $this->$storage->getBucket($this->$bucket, $path, null, 10000, '/');            
+            $dirs = $this->storage->getBucket($this->bucket, $directory, null, 10000, '/');
             foreach($dirs as $dir){
-                if(!array_key_exists('subdir',$dir)){
-                    array_merge($results,$dir['name']);
+                if(!array_key_exists('subdir', $dir)){
+                array_push($results,Util::map($dir,['content_type'=>'type','name'=>'path','last_modified'=>'timestamp','bytes'=>'size']));
                 }
             }
             return $results;
         } else {
-            $dirs = $this->$storage->getBucket($this->$bucket,$path, null, 10000,'/');
+            $dirs = $this->storage->getBucket($this->bucket, $directory, null, 10000, '/');
             foreach($dirs as $dir){
                 if(!array_key_exists('subdir', $dir)){
-                    array_merge($results,$dir['name']);
-                }else {
-                    array_merge($results,$this->listContents($dir['name'],true));
+                    array_push($results,Util::map($dir,['content_type'=>'type','name'=>'path','last_modified'=>'timestamp','bytes'=>'size']));
+                } else {
+                    $results = array_merge($results,$this->listContents($dir['subdir'],true));
                 }
             }
             return $results;
@@ -121,7 +123,7 @@ class StorageAdapter extends AbstractAdapter
      */
     public function getMetadata($path)
     {
-        return $this->getObjectInfo($this->$bucket,$path,true);
+        return $this->storage->getObjectInfo($this->bucket,$path,true);
     }
 
 
@@ -134,7 +136,7 @@ class StorageAdapter extends AbstractAdapter
      */
     public function getSize($path)
     {
-        $result = $this->getObjectInfo($this->$bucket,$path,true);
+        $result = $this->getObjectInfo($this->bucket,$path,true);
         return $result['size'];
     }
 
@@ -149,7 +151,7 @@ class StorageAdapter extends AbstractAdapter
      */
     public function getMimetype($path)
     {
-        $result = $this->getObjectInfo($this->$bucket,$path,true);
+        $result = $this->getObjectInfo($this->bucket,$path,true);
         return $result['type'];
     }
 
@@ -164,7 +166,7 @@ class StorageAdapter extends AbstractAdapter
      */
     public function getTimestamp($path)
     {
-        $result = $this->getObjectInfo($this->$bucket,$path,true);
+        $result = $this->getObjectInfo($this->bucket,$path,true);
         return $result['date'];
     }
 
@@ -205,8 +207,8 @@ class StorageAdapter extends AbstractAdapter
      */
     public function write($path, $contents, Config $config)
     {
-        if((bool) $this->$storage->putObject($contents, $this->$bucket, $path)){
-            return $this-$getMetadata($path);
+        if((bool) $this->storage->putObject($contents, $this->bucket, $path)){
+            return $this->getMetadata($path);
         } else {
             return false;
         }
@@ -224,8 +226,8 @@ class StorageAdapter extends AbstractAdapter
      */
     public function writeStream($path, $resource, Config $config)
     {
-        if((bool) $this->$storage->putObject($contents, $this->$bucket, $path)){
-            return $this-$getMetadata($path);
+        if((bool) $this->storage->putObject($contents, $this->bucket, $path)){
+            return $this->getMetadata($path);
         } else {
             return false;
         }
@@ -282,7 +284,11 @@ class StorageAdapter extends AbstractAdapter
      */
     public function rename($path, $newpath)
     {
-        return $this->copy($path, $newpath) && $this->delete($path);
+        $r1 = $this->copy($path, $newpath);
+        $r2 = $this->delete($path);
+        var_dump($r1);
+        var_dump($r2);
+        return $r1 && $r2;
     }
 
 
@@ -300,7 +306,7 @@ class StorageAdapter extends AbstractAdapter
         if( !$this->has($path)){
             return false;
         } else {
-            return (bool) $this->$storage->copyObject($this->$bucket,$path,$this->$bucket,$newpath);
+            return (bool) $this->storage->copyObject($this->bucket,$path,$this->bucket,$newpath);
         }
     }
 
@@ -317,7 +323,7 @@ class StorageAdapter extends AbstractAdapter
         if(!$this->has($path)){
             return false;
         } else {
-            return (bool) $this->$storage->deleteObject($this->$bucket,$path);
+            return (bool) $this->storage->deleteObject($this->bucket,$path);
         }
     }
 
@@ -334,8 +340,8 @@ class StorageAdapter extends AbstractAdapter
         if(!$this->has($dirname)){
             return false;
         } else{
-            foreach ($this->$storage->listContents($dirname,ture) as $obj){
-                $this->$storage->delete($obj);
+            foreach ($this->storage->listContents($dirname,ture) as $obj){
+                $this->storage->delete($obj['path']);
             }
             return true;
         }
@@ -352,7 +358,7 @@ class StorageAdapter extends AbstractAdapter
      */
     public function createDir($dirname, Config $config)
     {
-        $this->$storage->write($dirname,'',$config);
+        $this->storage->write($dirname,'',$config);
     }
 
 

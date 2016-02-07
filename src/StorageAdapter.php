@@ -286,8 +286,6 @@ class StorageAdapter extends AbstractAdapter
     {
         $r1 = $this->copy($path, $newpath);
         $r2 = $this->delete($path);
-        var_dump($r1);
-        var_dump($r2);
         return $r1 && $r2;
     }
 
@@ -306,7 +304,7 @@ class StorageAdapter extends AbstractAdapter
         if( !$this->has($path)){
             return false;
         } else {
-            return (bool) $this->storage->copyObject($this->bucket,$path,$this->bucket,$newpath);
+            return (bool) !$this->storage->copyObject($this->bucket,$path,$this->bucket,$newpath);
         }
     }
 
@@ -337,14 +335,10 @@ class StorageAdapter extends AbstractAdapter
      */
     public function deleteDir($dirname)
     {
-        if(!$this->has($dirname)){
-            return false;
-        } else{
-            foreach ($this->storage->listContents($dirname,ture) as $obj){
-                $this->storage->delete($obj['path']);
-            }
-            return true;
+        foreach ($this->storage->listContents($dirname,ture) as $obj){
+            $this->delete($obj['path']);
         }
+        return true;
     }
 
 

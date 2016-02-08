@@ -1,10 +1,10 @@
 <?php
-require_once __DIR__ . '/vendor/autoload.php';
-require_once __DIR__ . '/StoragAdapter.php';
+
+require_once __DIR__ . '/../vendor/autoload.php';
 
 use Litp\Flysystem\StorageAdapter;
+use Litp\Flysystem\Storage;
 use League\Flysystem\Filesystem;
-use sinacloud\sae\Storage;
 
 function test_assert($var, $expect, $test_name)
 {
@@ -16,7 +16,7 @@ function test_assert($var, $expect, $test_name)
 }
 
 // setup for testing
-$storage = new Storage();
+$storage = new Storage("kvdbtest:on3zyxly0n","wxzz5i30hkzk5j1j32w13klk00ih223wyxykjxzw");
 $adapter = new StorageAdapter($storage,'test');
 $filesystem = new Filesystem($adapter);
 

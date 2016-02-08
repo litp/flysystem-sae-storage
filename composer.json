@@ -21,7 +21,8 @@
     "league/flysystem": "^1.0"
   },
   "require-dev": {
-    "phpunit/phpunit": "^4.5"
+    "phpunit/phpunit": "^4.5",
+    "vlucas/phpdotenv":"*"
   },
   "extra": {
     "branch-alias": {

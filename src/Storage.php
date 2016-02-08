@@ -1,8 +1,9 @@
 <?php
  namespace Litp\Flysystem;
  //namespace sinacloud\sae;
- // 这是SAE提供的官方Storage客户端代码，flysystem-sae-storage则是以这个客户端为基础构建
- // 由于新浪没有提供相关的composer的包，我只能把代码放入flysystem-sae-storage包中
+ // 这是SAE提供的官方Storage客户端代码，要在非SAE环境中使用flysystem-sae-storage需要这个文件
+ // 在SAE中使用flysystem-sae-storag不需要本文件（因为本文件已经在SAE中预置了）
+ // 由于新浪没有提供相关的composer的包，我于是把代码放入flysystem-sae-storage包中
  
  if (defined('SAE_APPNAME')) {
      define('DEFAULT_STORAGE_ENDPOINT', 'api.i.sinas3.com:81');
@@ -1378,4 +1379,5 @@
          return $acl;
      }
  } stream_wrapper_register('storage', 'Litp\Flysystem\StorageWrapper');
+ //为了适配命名空间，我把前一行的sinacloud\sae改为了Litp\Flysystem，其余代码一字未改
  

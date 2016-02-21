@@ -2,9 +2,6 @@
 
 namespace Litp\Flysystem;
 
-require_once __DIR__ . '/../vendor/autoload.php';
-
-//use sinacloud\sae\Storage;
 
 use League\Flysystem\Adapter\AbstractAdapter;
 use League\Flysystem\Config;

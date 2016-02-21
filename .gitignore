@@ -4,3 +4,4 @@ vendor/
 .env
 composer.phar
 composer.lock
+tests/test.php
